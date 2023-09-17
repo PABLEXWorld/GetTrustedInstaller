@@ -6,11 +6,8 @@ namespace GetTrustedInstaller
 {
     class Program
     {
-    
-        
         static int Main(string[] args)
         {
-
             // I use TrustedInstaller process that is in the background only when the TrustedInstaller service is running to pass its ID to py7hagoras code
             ServiceController sc = new ServiceController
             {
@@ -35,8 +32,5 @@ namespace GetTrustedInstaller
                 return 3;
             }
         }
-
-
-
     }
 }

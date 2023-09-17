@@ -13,7 +13,9 @@ namespace GetTrustedInstaller
         public static extern IntPtr OpenProcess(ProcessAccessFlags processAccess, bool bInheritHandle, int processId);
 
         [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern UInt32 WaitForSingleObject(IntPtr handle, UInt32 milliseconds);
+        const UInt32 INFINITE = 0xFFFFFFFF;
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -33,7 +35,10 @@ namespace GetTrustedInstaller
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool DuplicateHandle(IntPtr hSourceProcessHandle, IntPtr hSourceHandle, IntPtr hTargetProcessHandle, ref IntPtr lpTargetHandle, uint dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, uint dwOptions);
 
-        public static void Run(int parentProcessId, string binaryPath)
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool GetExitCodeProcess(IntPtr hProcess, out int lpExitCode);
+
+        public static int Run(int parentProcessId, string lpCommandLine, bool createConsoleWindow)
         {
             const int PROC_THREAD_ATTRIBUTE_PARENT_PROCESS = 0x00020000;
 
@@ -64,10 +69,23 @@ namespace GetTrustedInstaller
             ts.nLength = Marshal.SizeOf(ts);
 
             // lpCommandLine was used instead of lpApplicationName to allow for arguments to be passed
-            bool ret = CreateProcess(null, binaryPath, ref ps, ref ts, true, EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE, IntPtr.Zero, null, ref siEx, out pInfo);
+            if (!CreateProcess(null, lpCommandLine, ref ps, ref ts, true, (!createConsoleWindow) ? EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE : EXTENDED_STARTUPINFO_PRESENT, IntPtr.Zero, null, ref siEx, out pInfo))
+            {
+                Console.WriteLine("Error en CreateProcess.");
+                Console.Write("Presione una tecla para continuar...");
+                Console.ReadKey();
+                return 3;
+            }
 
-            String stringPid = pInfo.dwProcessId.ToString();
-                    
+            WaitForSingleObject(pInfo.hProcess, INFINITE);
+            GetExitCodeProcess(pInfo.hProcess, out int exitCode);
+
+            CloseHandle(pInfo.hProcess);
+            CloseHandle(pInfo.hThread);
+            pInfo.hProcess = IntPtr.Zero;
+            pInfo.hThread = IntPtr.Zero;
+
+            return exitCode;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
