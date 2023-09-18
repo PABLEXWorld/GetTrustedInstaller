@@ -13,7 +13,6 @@ namespace GetTrustedInstaller
         public static extern IntPtr OpenProcess(ProcessAccessFlags processAccess, bool bInheritHandle, int processId);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern UInt32 WaitForSingleObject(IntPtr handle, UInt32 milliseconds);
         const UInt32 INFINITE = 0xFFFFFFFF;
 
@@ -43,7 +42,7 @@ namespace GetTrustedInstaller
             const int PROC_THREAD_ATTRIBUTE_PARENT_PROCESS = 0x00020000;
 
             const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
-            const uint CREATE_NEW_CONSOLE = 0x00000010;
+            const uint CREATE_NO_WINDOW = 0x08000000;
 
             var pInfo = new PROCESS_INFORMATION();
             var siEx = new STARTUPINFOEX();
@@ -69,7 +68,7 @@ namespace GetTrustedInstaller
             ts.nLength = Marshal.SizeOf(ts);
 
             // lpCommandLine was used instead of lpApplicationName to allow for arguments to be passed
-            if (!CreateProcess(null, lpCommandLine, ref ps, ref ts, true, (!createConsoleWindow) ? EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE : EXTENDED_STARTUPINFO_PRESENT, IntPtr.Zero, null, ref siEx, out pInfo))
+            if (!CreateProcess(null, lpCommandLine, ref ps, ref ts, true, (!createConsoleWindow) ? EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW : EXTENDED_STARTUPINFO_PRESENT, IntPtr.Zero, null, ref siEx, out pInfo))
             {
                 Console.WriteLine("Error en CreateProcess.");
                 Console.Write("Presione una tecla para continuar...");
